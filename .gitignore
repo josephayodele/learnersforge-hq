@@ -1,0 +1,22 @@
+# ── Dependencies / build caches ────────────────────────────────
+node_modules/
+**/node_modules/
+vendor/
+# NOTE: frontend/dist/ is intentionally committed — cPanel "Deploy HEAD Commit"
+# copies the built bundle to hq-portal, so the build must be in the repo.
+
+# ── Secrets ────────────────────────────────────────────────────
+# Real HQ DB credentials live only on the server; commit the .example instead.
+backend/config/hq.php
+.env
+.env.*
+!.env.*.example
+
+# ── Logs / OS cruft ────────────────────────────────────────────
+*.log
+.DS_Store
+Thumbs.db
+
+# ── Editor ─────────────────────────────────────────────────────
+.vscode/
+.idea/

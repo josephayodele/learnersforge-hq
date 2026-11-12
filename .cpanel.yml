@@ -1,0 +1,33 @@
+---
+# cPanel "Git Version Control" deployment manifest — LearnersForge HQ.
+# $HOME resolves to the account home (e.g. /home1/rgabfmmy).
+#
+# Files are ONLY copied when you click "Deploy HEAD Commit" in
+#   cPanel → Git Version Control → Manage.
+#
+# ONE-TIME SERVER SETUP:
+#   1. Create subdomain hq.learnersforge.com  →  Document Root: <HOME>/hq-portal
+#   2. MultiPHP Manager → set hq.learnersforge.com to PHP 8.x
+#   3. Create the rgabfmmy_hq database and import backend/database/hq_schema.sql
+#   4. Create a MySQL user (e.g. rgabfmmy_hquser) and ADD it to rgabfmmy_hq AND
+#      every school database (ALL PRIVILEGES).
+#   5. Create <HOME>/hq-api/config/hq.php from config/hq.php.example with the real
+#      DB credentials (git-ignored; a deploy never overwrites it).
+#   The /api symlink below makes the browser app call hq.learnersforge.com/api
+#   same-origin (no CORS needed for the app itself).
+deployment:
+  tasks:
+    - /bin/echo "== Deploying HQ API to $HOME/hq-api =="
+    - /bin/mkdir -p "$HOME/hq-api/app" "$HOME/hq-api/database" "$HOME/hq-api/public" "$HOME/hq-api/config"
+    - /bin/cp -R backend/app/.      "$HOME/hq-api/app/"
+    - /bin/cp -R backend/database/. "$HOME/hq-api/database/"
+    - /bin/cp -R backend/public/.   "$HOME/hq-api/public/"
+    # -n = no-clobber: ships hq.php.example without overwriting your real config.
+    - /bin/cp -Rn backend/config/.  "$HOME/hq-api/config/"
+
+    - /bin/echo "== Deploying HQ frontend to $HOME/hq-portal =="
+    - /bin/mkdir -p "$HOME/hq-portal"
+    - /bin/cp -R frontend/dist/.    "$HOME/hq-portal/"
+    # Same-origin API: hq.learnersforge.com/api -> hq-api/public
+    - /bin/ln -sfn "$HOME/hq-api/public" "$HOME/hq-portal/api"
+    - /bin/ls -la "$HOME/hq-portal"

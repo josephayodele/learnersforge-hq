@@ -1,0 +1,33 @@
+<?php
+// config/hq.php — LearnersForge HQ (control-plane) configuration.
+// COPY this file to config/hq.php on the server and fill in real values.
+// The real config/hq.php is GIT-IGNORED and lives only on the server.
+return [
+    // The HQ control database + the cross-schema MySQL user (attached to the HQ
+    // database AND every school database `rgabfmmy_<school>`).
+    'db' => [
+        'host'     => 'localhost',
+        'port'     => '3306',
+        'dbname'   => 'rgabfmmy_hq',
+        'username' => 'rgabfmmy_hquser',
+        'password' => 'CHANGE_ME',
+    ],
+
+    // How school databases are named on this cPanel account. HQ auto-discovers
+    // schools with `SHOW DATABASES LIKE '<db_prefix>%'` (it only sees the ones the
+    // user above is attached to).
+    'db_prefix' => 'rgabfmmy_',
+
+    // Browser origins allowed to call this API. The app is served same-origin via
+    // the /api symlink, so this mainly matters for local dev.
+    'allowed_origins' => [
+        'https://hq.learnersforge.com',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+    ],
+
+    'app_name'          => 'LearnersForge HQ',
+    'mail_from'         => 'no-reply@learnersforge.com',
+    'otp_ttl_minutes'   => 10,   // how long an email login code stays valid
+    'session_ttl_hours' => 12,   // how long a signed-in session lasts
+];
