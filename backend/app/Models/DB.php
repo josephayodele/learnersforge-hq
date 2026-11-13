@@ -64,10 +64,18 @@ class DB {
     }
 
     // School databases visible to the HQ user (i.e. the ones it was granted on).
+    // Not a prepared statement: SHOW DATABASES doesn't reliably accept a bound
+    // LIKE parameter across MySQL/MariaDB, so list all and filter by prefix in PHP.
     public static function listSchemas(string $prefix): array {
-        $stmt = self::conn()->prepare('SHOW DATABASES LIKE ?');
-        $stmt->execute([$prefix . '%']);
-        return array_map(static fn($r) => array_values($r)[0], $stmt->fetchAll());
+        $rows = self::conn()->query('SHOW DATABASES')->fetchAll();
+        $out = [];
+        foreach ($rows as $r) {
+            $name = array_values($r)[0];
+            if ($prefix === '' || strncmp($name, $prefix, strlen($prefix)) === 0) {
+                $out[] = $name;
+            }
+        }
+        return $out;
     }
 }
 
