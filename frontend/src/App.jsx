@@ -240,8 +240,12 @@ function RegisterModal({ onClose, onDone, toast }) {
   const [busy, setBusy] = useState('')
   useEffect(() => { api.discover().then((r) => setCands(r.data.candidates)).catch((x) => { toast(x.message, true); setCands([]) }) }, [])
   const add = async (c) => {
+    const domain = (window.prompt(
+      `Portal host for ${c.detected_name || c.db_schema} — used by the student mobile app to reach this school's API. Example: portal.sjacedu.ng`,
+      ''
+    ) || '').trim()
     setBusy(c.db_schema)
-    try { await api.register({ db_schema: c.db_schema, name: c.detected_name || c.db_schema }); toast('School registered'); onDone() }
+    try { await api.register({ db_schema: c.db_schema, name: c.detected_name || c.db_schema, domain }); toast('School registered'); onDone() }
     catch (x) { toast(x.message, true) } finally { setBusy('') }
   }
   return <Modal title="Register a school" onClose={onClose} width={560}>

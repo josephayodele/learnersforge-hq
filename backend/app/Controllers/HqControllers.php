@@ -557,3 +557,33 @@ class AuditController {
         respond(['audit' => $rows]);
     }
 }
+
+// ─── MobileController ─────────────────────────────────────────────────────────
+// PUBLIC school directory for the student mobile app. No auth: the app calls this
+// before login to let a student pick their school and learn its API base URL.
+// Each school's `domain` in the registry should be its portal host (e.g.
+// "portal.sjacedu.ng"); the student API then lives at https://<domain>/api/v1.
+class MobileController {
+    private static function urls(?string $domain): array {
+        $host = preg_replace('#^https?://#', '', trim((string) $domain));
+        $host = rtrim($host, '/');
+        if ($host === '') return ['domain' => null, 'web' => null, 'api_base' => null];
+        return ['domain' => $host, 'web' => "https://$host", 'api_base' => "https://$host/api/v1"];
+    }
+
+    // Active schools only — a suspended school is hidden from the app.
+    public static function schools(): void {
+        $rows = DB::query("SELECT slug, name, domain, color FROM schools WHERE is_registered = 1 AND status = 'active' ORDER BY sort_order, name");
+        $out = [];
+        foreach ($rows as $s) {
+            $out[] = ['slug' => $s['slug'], 'name' => $s['name'], 'color' => $s['color']] + self::urls($s['domain']);
+        }
+        respond(['schools' => $out]);
+    }
+
+    public static function school(string $slug): void {
+        $s = DB::one('SELECT slug, name, domain, color, status FROM schools WHERE slug = ? AND is_registered = 1', [$slug]);
+        if (!$s) respond(null, 404, 'School not found');
+        respond(['slug' => $s['slug'], 'name' => $s['name'], 'color' => $s['color'], 'status' => $s['status']] + self::urls($s['domain']));
+    }
+}

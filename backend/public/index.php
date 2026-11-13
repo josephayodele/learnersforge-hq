@@ -101,6 +101,10 @@ try {
         respond(['service' => 'LearnersForge HQ API', 'ok' => true]);
     }
 
+    // Mobile school directory (PUBLIC — the student app calls this before login)
+    elseif ($uri === '/mobile/schools' && $method === 'GET') MobileController::schools();
+    elseif (preg_match('#^/mobile/schools/([A-Za-z0-9_-]+)$#', $uri, $mm) && $method === 'GET') MobileController::school($mm[1]);
+
     // Auth (public)
     elseif ($uri === '/auth/login'  && $method === 'POST') HqAuth::login();
     elseif ($uri === '/auth/verify' && $method === 'POST') HqAuth::verify();
