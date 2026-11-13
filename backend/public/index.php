@@ -5,7 +5,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', '0');
 
 // ── Config ─────────────────────────────────────────────────────────────────────
-$cfgPath = dirname(__DIR__, 2) . '/config/hq.php';
+$cfgPath = dirname(__DIR__) . '/config/hq.php';
 if (!is_file($cfgPath)) {
     http_response_code(500);
     header('Content-Type: application/json; charset=UTF-8');
