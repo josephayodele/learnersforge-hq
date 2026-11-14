@@ -195,6 +195,7 @@ function Schools({ onOpen, toast }) {
   const [rows, setRows] = useState(null)
   const [reg, setReg] = useState(false)
   const [suspend, setSuspend] = useState(null)
+  const [edit, setEdit] = useState(null)
   const load = useCallback(() => api.schools().then((r) => setRows(r.data.schools)).catch(() => setRows([])), [])
   useEffect(() => { load() }, [load])
 
@@ -219,6 +220,7 @@ function Schools({ onOpen, toast }) {
               <td style={{ ...td, color: C.textMid }}>{s.domain || '—'}</td>
               <td style={td}><Badge color={s.status === 'suspended' ? 'red' : 'green'}>{s.status === 'suspended' ? 'Suspended' : 'Active'}</Badge></td>
               <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                <Btn size="sm" variant="ghost" onClick={() => setEdit(s)} style={{ marginRight: 6 }}>Edit</Btn>
                 <Btn size="sm" variant="secondary" onClick={() => onOpen(s.id)} style={{ marginRight: 6 }}>Open</Btn>
                 {s.status === 'suspended'
                   ? <Btn size="sm" variant="success" onClick={() => doResume(s)}>Resume</Btn>
@@ -232,7 +234,39 @@ function Schools({ onOpen, toast }) {
     </Card>
     {reg && <RegisterModal onClose={() => setReg(false)} onDone={() => { setReg(false); load() }} toast={toast} />}
     {suspend && <SuspendModal school={suspend} onClose={() => setSuspend(null)} onDone={() => { setSuspend(null); load() }} toast={toast} />}
+    {edit && <EditSchoolModal school={edit} onClose={() => setEdit(null)} onDone={() => { setEdit(null); load() }} toast={toast} />}
   </div>
+}
+
+function EditSchoolModal({ school, onClose, onDone, toast }) {
+  const [f, setF] = useState({
+    name: school.name || '', domain: school.domain || '', api_base_url: school.api_base_url || '', color: school.color || '',
+  })
+  const [busy, setBusy] = useState(false)
+  const set = (k) => (v) => setF((o) => ({ ...o, [k]: v }))
+  const host = f.domain.trim().replace(/^https?:\/\//, '').replace(/\/$/, '')
+  const derived = host ? `https://${host}/api/v1` : '—'
+  const save = async () => {
+    setBusy(true)
+    try { await api.updateSchool(school.id, f); toast('School updated'); onDone() }
+    catch (x) { toast(x.message, true); setBusy(false) }
+  }
+  return <Modal title={`Edit ${school.name}`} onClose={onClose} width={480}>
+    <Field label="Display name"><Input value={f.name} onChange={set('name')} /></Field>
+    <Field label="Portal host"><Input value={f.domain} onChange={set('domain')} placeholder="portal.sjacedu.ng" /></Field>
+    <div style={{ fontSize: 12, color: C.textMuted, marginTop: -6, marginBottom: 12 }}>
+      The app's web link for this school. Unless you set an API base below, the mobile API defaults to
+      {' '}<span style={{ fontFamily: 'monospace', color: C.textMid }}>{derived}</span>.
+    </div>
+    <Field label="API base URL — only if different from the default above">
+      <Input value={f.api_base_url} onChange={set('api_base_url')} placeholder="https://api.sjacedu.ng/api/v1" />
+    </Field>
+    <Field label="Brand colour (optional)"><Input value={f.color} onChange={set('color')} placeholder="#2563eb" /></Field>
+    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
+      <Btn variant="secondary" onClick={onClose}>Cancel</Btn>
+      <Btn disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save'}</Btn>
+    </div>
+  </Modal>
 }
 
 function RegisterModal({ onClose, onDone, toast }) {

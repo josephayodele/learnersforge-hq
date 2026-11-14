@@ -113,6 +113,7 @@ class SchoolsController {
                 'name'             => $s['name'],
                 'db_schema'        => $s['db_schema'],
                 'domain'           => $s['domain'],
+                'api_base_url'     => $s['api_base_url'],
                 'color'            => $s['color'],
                 'is_registered'    => (int) $s['is_registered'],
                 'status'           => $control['status'] ?? $s['status'],
@@ -174,7 +175,7 @@ class SchoolsController {
         $b = body();
         $fields = [];
         $params = [];
-        foreach (['name', 'slug', 'domain', 'color', 'sort_order'] as $f) {
+        foreach (['name', 'slug', 'domain', 'api_base_url', 'color', 'sort_order'] as $f) {
             if (array_key_exists($f, $b)) { $fields[] = "`$f` = ?"; $params[] = ($b[$f] === '' ? null : $b[$f]); }
         }
         if (!$fields) respond(null, 422, 'Nothing to update');
@@ -564,26 +565,34 @@ class AuditController {
 // Each school's `domain` in the registry should be its portal host (e.g.
 // "portal.sjacedu.ng"); the student API then lives at https://<domain>/api/v1.
 class MobileController {
-    private static function urls(?string $domain): array {
-        $host = preg_replace('#^https?://#', '', trim((string) $domain));
-        $host = rtrim($host, '/');
-        if ($host === '') return ['domain' => null, 'web' => null, 'api_base' => null];
-        return ['domain' => $host, 'web' => "https://$host", 'api_base' => "https://$host/api/v1"];
+    // web = https://<domain>; api_base = the explicit api_base_url if set, else
+    // https://<domain>/api/v1 (same-origin). Either can be null when unset.
+    private static function urls(?string $domain, ?string $apiBase = null): array {
+        $host = rtrim(preg_replace('#^https?://#', '', trim((string) $domain)), '/');
+        $web  = $host !== '' ? "https://$host" : null;
+        $api  = trim((string) $apiBase);
+        if ($api !== '') {
+            if (!preg_match('#^https?://#', $api)) $api = "https://$api";
+            $api = rtrim($api, '/');
+        } else {
+            $api = $host !== '' ? "https://$host/api/v1" : null;
+        }
+        return ['domain' => $host ?: null, 'web' => $web, 'api_base' => $api];
     }
 
     // Active schools only — a suspended school is hidden from the app.
     public static function schools(): void {
-        $rows = DB::query("SELECT slug, name, domain, color FROM schools WHERE is_registered = 1 AND status = 'active' ORDER BY sort_order, name");
+        $rows = DB::query("SELECT slug, name, domain, api_base_url, color FROM schools WHERE is_registered = 1 AND status = 'active' ORDER BY sort_order, name");
         $out = [];
         foreach ($rows as $s) {
-            $out[] = ['slug' => $s['slug'], 'name' => $s['name'], 'color' => $s['color']] + self::urls($s['domain']);
+            $out[] = ['slug' => $s['slug'], 'name' => $s['name'], 'color' => $s['color']] + self::urls($s['domain'], $s['api_base_url']);
         }
         respond(['schools' => $out]);
     }
 
     public static function school(string $slug): void {
-        $s = DB::one('SELECT slug, name, domain, color, status FROM schools WHERE slug = ? AND is_registered = 1', [$slug]);
+        $s = DB::one('SELECT slug, name, domain, api_base_url, color, status FROM schools WHERE slug = ? AND is_registered = 1', [$slug]);
         if (!$s) respond(null, 404, 'School not found');
-        respond(['slug' => $s['slug'], 'name' => $s['name'], 'color' => $s['color'], 'status' => $s['status']] + self::urls($s['domain']));
+        respond(['slug' => $s['slug'], 'name' => $s['name'], 'color' => $s['color'], 'status' => $s['status']] + self::urls($s['domain'], $s['api_base_url']));
     }
 }

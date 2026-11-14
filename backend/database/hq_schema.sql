@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS `schools` (
   `name`             VARCHAR(160) NOT NULL,
   `db_schema`        VARCHAR(190) NOT NULL UNIQUE,
   `domain`           VARCHAR(190) NULL,
+  `api_base_url`     VARCHAR(255) NULL,
   `status`           ENUM('active','suspended') NOT NULL DEFAULT 'active',
   `suspended_reason` VARCHAR(255) NULL,
   `suspended_at`     DATETIME NULL,
