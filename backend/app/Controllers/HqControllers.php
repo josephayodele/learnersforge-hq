@@ -176,7 +176,18 @@ class SchoolsController {
         $fields = [];
         $params = [];
         foreach (['name', 'slug', 'domain', 'api_base_url', 'color', 'sort_order'] as $f) {
-            if (array_key_exists($f, $b)) { $fields[] = "`$f` = ?"; $params[] = ($b[$f] === '' ? null : $b[$f]); }
+            if (!array_key_exists($f, $b)) continue;
+            $val = ($b[$f] === '' ? null : $b[$f]);
+            // Store `domain` as a bare host: strip scheme, any path, and trailing slash.
+            if ($f === 'domain' && $val !== null) {
+                $val = preg_replace('#^https?://#', '', trim((string) $val));
+                $val = preg_replace('#[/?].*$#', '', $val);
+            }
+            if ($f === 'api_base_url' && $val !== null) {
+                $val = rtrim(trim((string) $val), '/');
+            }
+            $fields[] = "`$f` = ?";
+            $params[] = $val;
         }
         if (!$fields) respond(null, 422, 'Nothing to update');
         $params[] = $id;

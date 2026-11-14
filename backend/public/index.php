@@ -168,5 +168,6 @@ try {
     else respond(null, 404, 'Not found');
 
 } catch (\Throwable $e) {
-    respond(null, 500, 'Server error');
+    // Surface the real reason to the authenticated admin tool (not a public API).
+    respond(['detail' => $e->getMessage()], 500, 'Server error: ' . $e->getMessage());
 }
